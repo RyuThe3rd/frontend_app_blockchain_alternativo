@@ -1,7 +1,8 @@
 import 'dart:collection'; // Necessário para SplayTreeMap
 import 'dart:convert';
 import 'dart:typed_data';
-
+import 'package:archive/archive.dart';
+import 'package:cbor/simple.dart' as cbor_lib;
 import 'package:app_pfc_blockchain/Domain/entidade/DocumentoDeExtratoBancario.dart';
 import 'package:pointycastle/digests/sha256.dart';
 //import 'package:web3dart/crypto.dart';
@@ -9,21 +10,32 @@ import 'package:web3dart/web3dart.dart';
 import '../Services/clienteApiBlockchain.dart';
 
 class DocumentoRepo {
-  Future<DocumentoDeExtratoBancario> processarQrCode({
-    required Uint8List CBORDoQrCode,
-    required String idDoBanco,
+  Future<DocumentoDeExtratoBancario> processarQrCode({required Uint8List CBORDoQrCode, required String idDoBanco,
   }) async {
     try {
-      // Reconstruir o payload e o hash do documento (sem assinaturaBanco).
-      final payloadOriginal =
-      Map<String, dynamic>.from(jsonDecode(textoDoQrCode) as Map);
-      final assinaturaHex = payloadOriginal.remove('assinaturaBanco') as String;
-      final sortedPayload = SplayTreeMap<String, dynamic>.from(payloadOriginal);
-      final jsonCanonico = jsonEncode(sortedPayload);
-      final hashBytes = SHA256Digest().process(
-        Uint8List.fromList(utf8.encode(jsonCanonico)),
-      );
-      final documentHashHex = '0x${bytesToHex(hashBytes)}';
+      // 1. Descodificar o envelope CBOR.
+      final envelope = cbor_lib.cbor.decode(CBORDoQrCode) as List;
+
+      final versaoProtocolo = envelope[0];
+      final tipoPayload = envelope[1];
+      final versaoEsquema = envelope[2];
+      final algoritmoCompressao = envelope[3];
+
+      final payloadCBORComprimido = Uint8List.fromList(envelope[4] as List<int>);
+
+      final assinatura = Uint8List.fromList(envelope[5] as List<int>);
+
+      // 3. Descomprimir o CBOR.
+      final cborBytes = ZLibDecoder().decodeBytes(payloadCBORComprimido, verify: true, maxOutputSize: 512 * 1024,);
+
+      // 4. Recalcular o hash do CBOR original.
+      final documentHashBytes = SHA256Digest().process(cborBytes);
+
+      // 6. Descodificar o conteúdo autenticado.
+      final payload = descodificarPayload(cborBytes);
+
+      final sortedPayload = SplayTreeMap<String, dynamic>.from(payload);
+      final documentHashHex = '0x${bytesToHex(documentHashBytes)}';
 
       // Mensagens destinadas ao utilizador, sem detalhes técnicos.
       DocumentoDeExtratoBancario recusar(
@@ -38,8 +50,8 @@ class DocumentoRepo {
 
       // Uma chamada REST: a API consulta StatementRegistry e BankRegistry
       // numa so eth_call, atraves de verifyStatementWithStatus.
-      final registoBlockchain =
-      await ClienteApiBlockchain().getStatementRecord(documentHashHex);
+      final registoBlockchain = await ClienteApiBlockchain().getStatementRecord(documentHashHex);
+
       final existe = registoBlockchain['exists'] == true;
       if (!existe) {
         return recusar(
@@ -60,7 +72,7 @@ class DocumentoRepo {
 
       // A API informa a validade temporal e incidentes, mas nao confirma
       // a assinatura ECDSA contida no QR. Fazemos isso localmente.
-      final assinaturaBytes = hexToBytes(assinaturaHex);
+      final assinaturaBytes = assinatura;
       bool assinaturaValida = false;
       if (assinaturaBytes.length == 65) {
         final r = BigInt.parse(
@@ -74,10 +86,10 @@ class DocumentoRepo {
         // Compatibilidade temporaria com as variantes do assinador actual.
         // No protocolo definitivo deve existir UM unico esquema de assinatura.
         final candidatos = <Uint8List>[
-          hashBytes,
+          documentHashBytes,
           keccak256(Uint8List.fromList([
             ...utf8.encode('\x19Ethereum Signed Message:\n32'),
-            ...hashBytes,
+            ...documentHashBytes,
           ])),
           keccak256(Uint8List.fromList([
             ...utf8.encode(
@@ -158,6 +170,35 @@ class DocumentoRepo {
       );
     }
   }
+}
+
+Map<String, dynamic> descodificarPayload(Uint8List cborBytes) {
+  final decoded = cbor_lib.cbor.decode(cborBytes);
+
+  if (decoded is! List || decoded.length != 5) {
+    throw const FormatException(
+      'Estrutura do payload CBOR inválida.',
+    );
+  }
+
+  return {
+    'versaoEsquemaPayload': decoded[0],
+    'banco': decoded[1],
+    'titular': decoded[2],
+    'parteInteiraDoSaldoFinal': decoded[3],
+    'parteDeCentavosDoSaldoFinal': decoded[4],
+    'issuedAt': decoded[5],
+    'periodo': decoded[6],
+    'transactions': decoded[7],
+  };
+}
+
+Uint8List descomprimir(Uint8List bytesComprimidos) {
+  return ZLibDecoder().decodeBytes(
+    bytesComprimidos,
+    verify: true,
+    maxOutputSize: 512 * 1024,
+  );
 }
 
 /// Converte String Hexadecimal para Uint8List

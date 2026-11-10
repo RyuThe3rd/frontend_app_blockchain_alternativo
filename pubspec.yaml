@@ -45,6 +45,7 @@ dependencies:
   pointycastle: ^4.0.0
   convert: ^3.1.1
   web3dart: ^3.0.3
+  cbor: ^6.5.1
 
 dev_dependencies:
   flutter_test:

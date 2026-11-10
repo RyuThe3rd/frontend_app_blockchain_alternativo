@@ -1,5 +1,5 @@
 
-import 'dart:nativewrappers/_internal/vm/lib/typed_data_patch.dart';
+import 'dart:typed_data';
 
 import 'package:app_pfc_blockchain/Domain/entidade/DocumentoDeExtratoBancario.dart';
 import 'package:flutter/material.dart';
