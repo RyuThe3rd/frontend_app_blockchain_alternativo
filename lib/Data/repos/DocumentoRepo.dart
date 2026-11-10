@@ -21,12 +21,6 @@ class DocumentoRepo {
       final versaoEsquema = envelope[2];
       String algoritmoCompressao = envelope[3];
 
-      if (versaoProtocolo != 1 || tipoPayload != 'A' ||
-          versaoEsquema != 1 || algoritmoCompressao.trim().toLowerCase() != "zlib") {
-        throw const FormatException(
-          'Formato ou versão do documento não suportado.',
-        );
-      }
       final payloadCBORComprimido = Uint8List.fromList(envelope[4] as List<int>);
 
       final assinatura = Uint8List.fromList(envelope[5] as List<int>);
@@ -39,6 +33,16 @@ class DocumentoRepo {
 
       // 6. Descodificar o conteúdo autenticado.
       final payload = descodificarPayload(cborBytes);
+
+      if (payload['versaoProtocolo'] != versaoProtocolo ||
+          payload['tipoPayload'] != tipoPayload ||
+          payload['versaoEsquemaPayload'] != versaoEsquema) {
+
+        throw const FormatException(
+          'Os metadados do envelope não correspondem '
+              'aos metadados do payload autenticado.',
+        );
+      }
 
       final sortedPayload = SplayTreeMap<String, dynamic>.from(payload);
       final documentHashHex = '0x${bytesToHex(documentHashBytes)}';
@@ -96,11 +100,6 @@ class DocumentoRepo {
           keccak256(Uint8List.fromList([
             ...utf8.encode('\x19Ethereum Signed Message:\n32'),
             ...documentHashBytes,
-          ])),
-          keccak256(Uint8List.fromList([
-            ...utf8.encode(
-                '\x19Ethereum Signed Message:\n${documentHashHex.length}'),
-            ...utf8.encode(documentHashHex),
           ])),
         ];
 
@@ -181,21 +180,23 @@ class DocumentoRepo {
 Map<String, dynamic> descodificarPayload(Uint8List cborBytes) {
   final decoded = cbor_lib.cbor.decode(cborBytes);
 
-  if (decoded is! List || decoded.length != 8) {
+  if (decoded is! List || decoded.length != 10) {
     throw const FormatException(
       'Estrutura do payload CBOR inválida.',
     );
   }
 
   return {
-    'versaoEsquemaPayload': decoded[0],
-    'banco': decoded[1],
-    'titular': decoded[2],
-    'parteInteiraDoSaldoFinal': decoded[3],
-    'parteDeCentavosDoSaldoFinal': decoded[4],
-    'issuedAt': decoded[5],
-    'periodo': decoded[6],
-    'transactions': decoded[7],
+    'versaoProtocolo': decoded[0],
+    'tipoPayload': decoded[1],
+    'versaoEsquemaPayload': decoded[2],
+    'banco': decoded[3],
+    'titular': decoded[4],
+    'parteInteiraDoSaldoFinal': decoded[5],
+    'parteDeCentavosDoSaldoFinal': decoded[6],
+    'issuedAt': decoded[7],
+    'periodo': decoded[8],
+    'transactions': decoded[9],
   };
 }
 

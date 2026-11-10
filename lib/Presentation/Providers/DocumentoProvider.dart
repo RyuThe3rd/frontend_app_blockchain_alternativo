@@ -19,47 +19,50 @@ class DocumentoProvider extends ChangeNotifier{
 
   DocumentoProvider(this.documentoRepo);
 
-  void lerQrCode(Barcode? barcode) async {
-    print("Mapa");
-    print(bancoSelecionado);
-    print("");
-    print(barcode?.displayValue);
-
+  Future<void> lerQrCode(Barcode? barcode) async {
     isLoading = true;
     notifyListeners();
-    if(bancoSelecionado == null){
-       return;
-    }
 
-    final decoded = barcode!.rawDecodedBytes;
+    try {
+      final banco = bancoSelecionado;
 
-    Uint8List? valor;
-    if (decoded is DecodedBarcodeBytes) {
-      valor = decoded.bytes as Uint8List? ;
-    }
+      if (banco == null || barcode == null) {
+        throw DocumentoException(
+          'Banco ou código QR não disponível.',
+        );
+      }
 
+      final decoded = barcode.rawDecodedBytes;
 
-    if (valor == null) {
-      isLoading = false;
+      if (decoded is! DecodedBarcodeBytes ||
+          decoded.bytes.isEmpty) {
+        throw DocumentoException(
+          'Não foi possível recuperar os bytes do QR Code.',
+        );
+      }
+
+      resposta = await documentoRepo.processarQrCode(
+        CBORDoQrCode: decoded.bytes,
+        idDoBanco: banco['bankId'].toString(),
+      );
+
+      isDocumentoVeridico = resposta?.isDocumentoVeridico;
+
+    } catch (e, st) {
+      debugPrint('Erro na verificação: $e');
+      debugPrintStack(stackTrace: st);
+
+      resposta = DocumentoDeExtratoBancario({})
+        ..isDocumentoVeridico = false
+        ..mensagemDeErro = 'Não foi possível verificar o extracto'
+        ..mensagemDeErro2 = "Direcione este extracto a institiução titular relevante.";
+
       isDocumentoVeridico = false;
-      resposta?.mensagemDeErro = "QrCode invalido";
-      resposta?.mensagemDeErro2 = "Não foi possível ler o QR Code";
+
+    } finally {
+      isLoading = false;
       notifyListeners();
-      return;
     }
-    // _processarQrCode(barcode);
-
-    String texto = """{"banco":"BCI","titular":"Rui Manuel de Noronha Matomate","contaHash":"a8f3b21c4e9d00112233445566778899aabbccddeeff00112233445566778899a8f2","periodo":"2026-01-01 a 2026-06-30","saldoFinal":"500000.00 MZN","issuedAt":"2026-08-30T18:00:00Z","assinaturaBanco":"d10acdb3215172793827fd4ebb42e08466713500db1f12e1bb6d650d80596c0e96f8b8238db899bae6c5de1e3fb1fa6ed97b8197f0f494c46ef9c6059877ac0b"}""";
-    resposta = await documentoRepo.processarQrCode(
-    CBORDoQrCode: valor,
-     // textoDoQrCode: texto,
-        idDoBanco: bancoSelecionado!["bankId"].toString());
-
-    print("Resposta do processarQrCode: ${resposta?.dados}");
-    isDocumentoVeridico = resposta?.isDocumentoVeridico;
-    isLoading = false;
-    notifyListeners();
-
   }
 
 
