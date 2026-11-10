@@ -114,10 +114,16 @@ class _TelaDeCapturaDoQrCodeState extends State<TelaDeCapturaDoQrCode> {
     if (barcodes.barcodes.isEmpty) return;
 
     final barcode = barcodes.barcodes.first;
-    final valor = barcode.displayValue;
+
+    final decoded = barcode.rawDecodedBytes;
+
+    Uint8List? valor;
+    if (decoded is DecodedBarcodeBytes) {
+       valor = decoded.bytes;
+    }
 
     // 2. Ignora barcodes sem valor legível
-    if (valor == null || valor.trim().isEmpty) return;
+    if (valor == null || valor.isEmpty) return;
 
     // 3. Marca ANTES de qualquer coisa assíncrona pra não disparar de novo
     notScanned = false;

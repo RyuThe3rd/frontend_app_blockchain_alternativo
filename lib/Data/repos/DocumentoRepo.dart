@@ -10,7 +10,7 @@ import '../Services/clienteApiBlockchain.dart';
 
 class DocumentoRepo {
   Future<DocumentoDeExtratoBancario> processarQrCode({
-    required String textoDoQrCode,
+    required Uint8List CBORDoQrCode,
     required String idDoBanco,
   }) async {
     try {
