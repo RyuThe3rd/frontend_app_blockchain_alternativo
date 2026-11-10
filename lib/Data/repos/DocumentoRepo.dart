@@ -19,8 +19,14 @@ class DocumentoRepo {
       final versaoProtocolo = envelope[0];
       final tipoPayload = envelope[1];
       final versaoEsquema = envelope[2];
-      final algoritmoCompressao = envelope[3];
+      String algoritmoCompressao = envelope[3];
 
+      if (versaoProtocolo != 1 || tipoPayload != 'A' ||
+          versaoEsquema != 1 || algoritmoCompressao.trim().toLowerCase().compareTo("zlib") == 0) {
+        throw const FormatException(
+          'Formato ou versão do documento não suportado.',
+        );
+      }
       final payloadCBORComprimido = Uint8List.fromList(envelope[4] as List<int>);
 
       final assinatura = Uint8List.fromList(envelope[5] as List<int>);
