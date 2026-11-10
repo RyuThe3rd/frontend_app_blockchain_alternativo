@@ -76,7 +76,10 @@ class TelaDeResultadosState extends State<TelaDeResultados> {
 
 
     final dados = doc.dados;
-    final tempo = DateTime.tryParse(dados['issuedAt']);
+    final issuedAt = dados['issuedAt'];
+    final DateTime? tempo = issuedAt is String
+        ? DateTime.tryParse(issuedAt)
+        : null;
     if(tempo is DateTime) {
       final dataFormatada = dados['issuedAt'].split('T')[0];
       final horaFormatada = dados['issuedAt'].split('T')[1].replaceAll('Z', '');//"${tempo.hour}:${tempo.minute}:${tempo.second}";

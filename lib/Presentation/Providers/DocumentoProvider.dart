@@ -4,7 +4,7 @@ import 'dart:typed_data';
 import 'package:app_pfc_blockchain/Domain/entidade/DocumentoDeExtratoBancario.dart';
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
-import 'package:mobile_scanner/src/objects/barcode.dart';
+
 
 import '../../Data/repos/DocumentoRepo.dart';
 

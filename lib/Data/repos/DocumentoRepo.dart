@@ -112,7 +112,6 @@ class DocumentoRepo {
         // Compatibilidade temporaria com as variantes do assinador actual.
         // No protocolo definitivo deve existir UM unico esquema de assinatura.
         final candidatos = <Uint8List>[
-          documentHashBytes,
           keccak256(Uint8List.fromList([
             ...utf8.encode('\x19Ethereum Signed Message:\n32'),
             ...documentHashBytes,
