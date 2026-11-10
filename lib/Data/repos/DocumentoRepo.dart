@@ -22,7 +22,7 @@ class DocumentoRepo {
       String algoritmoCompressao = envelope[3];
 
       if (versaoProtocolo != 1 ||
-          tipoPayload != 'A' ||
+          tipoPayload != 'B' ||
           versaoEsquema != 1 ||
           algoritmoCompressao != 'zlib') {
         throw const FormatException(
