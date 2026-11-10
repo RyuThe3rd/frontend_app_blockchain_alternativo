@@ -22,7 +22,7 @@ class DocumentoRepo {
       String algoritmoCompressao = envelope[3];
 
       if (versaoProtocolo != 1 || tipoPayload != 'A' ||
-          versaoEsquema != 1 || algoritmoCompressao.trim().toLowerCase().compareTo("zlib") == 0) {
+          versaoEsquema != 1 || algoritmoCompressao.trim().toLowerCase() != "zlib") {
         throw const FormatException(
           'Formato ou versão do documento não suportado.',
         );
@@ -181,7 +181,7 @@ class DocumentoRepo {
 Map<String, dynamic> descodificarPayload(Uint8List cborBytes) {
   final decoded = cbor_lib.cbor.decode(cborBytes);
 
-  if (decoded is! List || decoded.length != 5) {
+  if (decoded is! List || decoded.length != 8) {
     throw const FormatException(
       'Estrutura do payload CBOR inválida.',
     );
