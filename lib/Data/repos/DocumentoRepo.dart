@@ -21,6 +21,22 @@ class DocumentoRepo {
       final versaoEsquema = envelope[2];
       String algoritmoCompressao = envelope[3];
 
+      if (versaoProtocolo != 1 ||
+          tipoPayload != 'A' ||
+          versaoEsquema != 1 ||
+          algoritmoCompressao != 'zlib') {
+        throw const FormatException(
+          'Formato ou versão do documento não suportado.',
+        );
+      }
+
+      if (envelope[4] is! List<int> ||
+          envelope[5] is! List<int>) {
+        throw const FormatException(
+          'Os campos binários do envelope são inválidos.',
+        );
+      }
+
       final payloadCBORComprimido = Uint8List.fromList(envelope[4] as List<int>);
 
       final assinatura = Uint8List.fromList(envelope[5] as List<int>);
