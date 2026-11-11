@@ -216,7 +216,7 @@ class TelaDeResultadosState extends State<TelaDeResultados> {
                   _buildItemInfo("- Saldo Final:", saldoFormatado, Icons.attach_money),
                   _buildItemInfo("- Data de Emissão:", emissaoFormatada, Icons.calendar_today),
                   _buildItemInfo("- Período de Transações:", dados['periodo'], Icons.date_range),
-                  if (dados['tipoPayload'] == 'A') _buildBotaoHistorico(doc),
+                  if (dados['tipoPayload'] == 'B') _buildBotaoHistorico(doc),
                 ],
               ),
             ),
