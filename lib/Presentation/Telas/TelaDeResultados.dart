@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../Providers/DocumentoProvider.dart';
 import '../../Domain/entidade/DocumentoDeExtratoBancario.dart';
+import 'TelaHistoricoDeTransacoes.dart';
 
 class TelaDeResultados extends StatefulWidget {
   const TelaDeResultados({super.key});
@@ -65,6 +66,48 @@ class TelaDeResultadosState extends State<TelaDeResultados> {
     );
   }
 
+  /// Só é apresentado nos extractos Tipo B.
+  /// O histórico já foi descodificado pelo DocumentoRepo;
+  /// não é necessário voltar a consultar a API.
+  Widget _buildBotaoHistorico(DocumentoDeExtratoBancario doc) {
+    final dados = doc.dados;
+    final lista = dados['transactions'];
+
+    // O descodificador Tipo B devolve List<Map<String, dynamic>>.
+    final transacoes = lista is List
+        ? lista.whereType<Map<String, dynamic>>().toList(growable: false)
+        : <Map<String, dynamic>>[];
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 16),
+      child: SizedBox(
+        width: double.infinity,
+        child: OutlinedButton.icon(
+          onPressed: () {
+            Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => TelaHistoricoDeTransacoes(
+                  transacoes: transacoes,
+                  banco: dados['banco']?.toString() ?? '',
+                  titular: dados['titular']?.toString() ?? '',
+                  periodo: dados['periodo']?.toString() ?? '',
+                  autenticado: doc.isDocumentoVeridico == true,
+                  emRevisao: doc.autenticidadeEmRevisao,
+                ),
+              ),
+            );
+          },
+          icon: const Icon(Icons.receipt_long_outlined),
+          label: Text('Ver histórico de transações (${transacoes.length})'),
+          style: OutlinedButton.styleFrom(
+            foregroundColor: Colors.blueAccent,
+            padding: const EdgeInsets.symmetric(vertical: 14),
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget cardResultado(DocumentoDeExtratoBancario? doc) {
     if (doc == null) {
       return const Center(child: Text("Nenhum resultado encontrado."));
@@ -76,28 +119,31 @@ class TelaDeResultadosState extends State<TelaDeResultados> {
 
 
     final dados = doc.dados;
-    final issuedAt = dados['issuedAt'];
-    final DateTime? tempo = issuedAt is String
-        ? DateTime.tryParse(issuedAt)
-        : null;
-    if(tempo is DateTime) {
-      final dataFormatada = dados['issuedAt'].split('T')[0];
-      final horaFormatada = dados['issuedAt'].split('T')[1].replaceAll('Z', '');//"${tempo.hour}:${tempo.minute}:${tempo.second}";
-
-      if(dados['issuedAt'].contains('Z') && dados['issuedAt'].contains('T')){
-        dados['issuedAt'] = "$dataFormatada às $horaFormatada";
-      }
-
+    // Apenas formata para apresentação; preserva o payload descodificado.
+    final emissaoOriginal = dados['issuedAt'];
+    final String emissaoFormatada;
+    if (emissaoOriginal is String &&
+        emissaoOriginal.contains('T') &&
+        DateTime.tryParse(emissaoOriginal) != null) {
+      emissaoFormatada = emissaoOriginal
+          .replaceFirst('T', ' às ')
+          .replaceFirst(RegExp(r'Z$'), ' UTC');
+    } else {
+      emissaoFormatada = emissaoOriginal?.toString() ?? 'N/A';
     }
 
-
-
+    // Os dois componentes do saldo permanecem inteiros no modelo.
+    final inteiro = dados['parteInteiraDoSaldoFinal'];
+    final centavos = dados['parteDeCentavosDoSaldoFinal'];
+    final saldoFormatado = inteiro is int && centavos is int
+        ? '${inteiro.toString()},${centavos.toString().padLeft(2, '0')}'
+        : 'N/A';
 
     //final corStatus = isVeridico ? Colors.green : Colors.red;
     final corStatus = emRevisao
         ? Colors.orange.shade800
         : (isVeridico ? Colors.green : Colors.red);
-   // final iconoStatus = isVeridico ? Icons.check_circle : Icons.cancel;
+    // final iconoStatus = isVeridico ? Icons.check_circle : Icons.cancel;
     final iconoStatus = emRevisao
         ? Icons.warning_amber_rounded
         : (isVeridico ? Icons.check_circle : Icons.cancel);
@@ -167,9 +213,10 @@ class TelaDeResultadosState extends State<TelaDeResultados> {
                   const Divider(height: 24),
                   _buildItemInfo("- Banco Emissor:", dados['banco'], Icons.account_balance),
                   _buildItemInfo("- Nome do Titular:", dados['titular'], Icons.person),
-                  _buildItemInfo("- Saldo Final:", "${dados['parteInteiraDoSaldoFinal']},${dados['parteDeCentavosDoSaldoFinal']}", Icons.attach_money),
-                  _buildItemInfo("- Data de Emissão:", dados['issuedAt'], Icons.calendar_today),
+                  _buildItemInfo("- Saldo Final:", saldoFormatado, Icons.attach_money),
+                  _buildItemInfo("- Data de Emissão:", emissaoFormatada, Icons.calendar_today),
                   _buildItemInfo("- Período de Transações:", dados['periodo'], Icons.date_range),
+                  if (dados['tipoPayload'] == 'B') _buildBotaoHistorico(doc),
                 ],
               ),
             ),
