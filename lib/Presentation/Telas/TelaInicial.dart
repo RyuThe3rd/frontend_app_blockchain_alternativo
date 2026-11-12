@@ -5,7 +5,8 @@
 //"
 // depois tem um botão retangular com o título: Verificar Extrato Bancario
 //que on tap, faz pushNameda para '/TelaDeEscolhaDeEntidade'
-
+import 'package:provider/provider.dart';
+import 'package:app_pfc_blockchain/Presentation/Providers/DocumentoProvider.dart';
 import 'package:flutter/material.dart';
 
 class TelaInicial extends StatelessWidget {
@@ -13,6 +14,9 @@ class TelaInicial extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+
+    context.read<DocumentoProvider>().isLoading = false;
+
     return Scaffold(
       backgroundColor: Colors.green[700],// quero um gradiente de green 400 à 700
       body: Container(
