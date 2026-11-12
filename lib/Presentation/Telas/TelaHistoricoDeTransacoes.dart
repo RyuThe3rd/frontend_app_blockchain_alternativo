@@ -103,6 +103,11 @@ class TelaHistoricoDeTransacoes extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Histórico de Transações'),
+        titleTextStyle: TextStyle(
+          color: Colors.white,
+          fontSize: 22,
+          fontWeight: FontWeight.bold,
+        ),
         centerTitle: true,
         backgroundColor: Colors.blue[700],
         foregroundColor: Colors.white,
