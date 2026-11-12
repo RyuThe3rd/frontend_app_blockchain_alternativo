@@ -253,7 +253,7 @@ class TelaDeResultadosState extends State<TelaDeResultados> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Resultado do Documento v5"),
+        title: const Text("Resultado do Documento"),
         titleTextStyle: TextStyle(
           color: Colors.white,
           fontSize: 22,
