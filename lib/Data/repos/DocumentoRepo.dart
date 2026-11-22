@@ -351,7 +351,7 @@ Map<String, dynamic> descodificarTipoA(Uint8List cborBytes) {
 
   return {
     ...comuns,
-    'contaHash': campos[5],
+    'numeroConta': campos[5],
     'periodo': campos[6],
     'parteInteiraDoSaldoFinal': campos[7],
     'parteDeCentavosDoSaldoFinal': campos[8],
@@ -363,31 +363,41 @@ Map<String, dynamic> descodificarTipoA(Uint8List cborBytes) {
 /// Tipo B (CBOR + ZLIB):
 /// [1, 'B', 1, banco, titular, saldoInteiro, saldoCentavos,
 ///  issuedAt, periodo, [[data, inteiro, centavos, 'C'|'D', descricao], ...]]
-Map<String, dynamic> descodificarTipoB(Uint8List cborBytes) {
-  final campos = _descodificarArrayCbor(cborBytes, 10);
+Map<String, dynamic> descodificarTipoB(Uint8List cborBytes,) {
+  final campos = _descodificarArrayCbor(cborBytes, 11);
   final comuns = descodificarCamposComuns(campos);
 
   if (campos[1] != 'B' ||
-      campos[5] is! int ||
+      campos[5] is! String ||
+      (campos[5] as String).trim().isEmpty ||
       campos[6] is! int ||
-      (campos[6] as int) < 0 || (campos[6] as int) > 99 ||
-      campos[7] is! String ||
+      campos[7] is! int ||
+      (campos[7] as int) < 0 ||
+      (campos[7] as int) > 99 ||
       campos[8] is! String ||
-      campos[9] is! List) {
-    throw const FormatException('Estrutura do extracto Tipo B inválida.');
+      campos[9] is! String ||
+      campos[10] is! List) {
+    throw const FormatException(
+      'Estrutura do extracto Tipo B inválida.',
+    );
   }
 
   final movimentos = <Map<String, dynamic>>[];
-  for (final dynamic item in campos[9] as List) {
-    if (item is! List || item.length != 5 ||
+
+  for (final dynamic item in campos[10] as List) {
+    if (item is! List ||
+        item.length != 5 ||
         item[0] is! String ||
         item[1] is! int ||
         (item[1] as int) < 0 ||
         item[2] is! int ||
-        (item[2] as int) < 0 || (item[2] as int) > 99 ||
+        (item[2] as int) < 0 ||
+        (item[2] as int) > 99 ||
         (item[3] != 'C' && item[3] != 'D') ||
         item[4] is! String) {
-      throw const FormatException('Movimento bancário CBOR inválido.');
+      throw const FormatException(
+        'Movimento bancário CBOR inválido.',
+      );
     }
 
     movimentos.add({
@@ -401,10 +411,11 @@ Map<String, dynamic> descodificarTipoB(Uint8List cborBytes) {
 
   return {
     ...comuns,
-    'parteInteiraDoSaldoFinal': campos[5],
-    'parteDeCentavosDoSaldoFinal': campos[6],
-    'issuedAt': campos[7],
-    'periodo': campos[8],
+    'numeroConta': campos[5],
+    'parteInteiraDoSaldoFinal': campos[6],
+    'parteDeCentavosDoSaldoFinal': campos[7],
+    'issuedAt': campos[8],
+    'periodo': campos[9],
     'transactions': movimentos,
   };
 }

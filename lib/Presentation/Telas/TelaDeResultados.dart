@@ -213,6 +213,7 @@ class TelaDeResultadosState extends State<TelaDeResultados> {
                   const Divider(height: 24),
                   _buildItemInfo("- Banco Emissor:", dados['banco'], Icons.account_balance),
                   _buildItemInfo("- Nome do Titular:", dados['titular'], Icons.person),
+                  _buildItemInfo("- Número da conta:", dados['numeroConta']?.toString(), Icons.credit_card,),
                   _buildItemInfo("- Saldo Final:", saldoFormatado, Icons.attach_money),
                   _buildItemInfo("- Data de Emissão:", emissaoFormatada, Icons.calendar_today),
                   _buildItemInfo("- Período de Transações:", dados['periodo'], Icons.date_range),
