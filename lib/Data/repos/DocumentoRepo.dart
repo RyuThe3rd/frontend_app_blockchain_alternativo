@@ -24,7 +24,7 @@ class DocumentoRepo {
   /// Mantém a assinatura do método utilizada pelo DocumentoProvider.
   Future<DocumentoDeExtratoBancario> processarQrCode({
     required Uint8List CBORDoQrCode,
-    required String idDoBanco,
+    required String idDoBanco, required String nomeDoBanco,
   }) async {
     try {
       // 1. Abrir envelope e obter o CBOR original, independentemente do tipo.
@@ -59,6 +59,7 @@ class DocumentoRepo {
 
       // 5. Uma única verificação para A e B.
       return await _verificarAutenticidade(
+        nomeDoBanco: nomeDoBanco,
         payload: payload,
         documentHashHex: documentHashHex,
         documentHashBytes: hashBytes,
@@ -177,6 +178,7 @@ class DocumentoRepo {
     required Uint8List documentHashBytes,
     required Uint8List assinaturaBytes,
     required String idDoBanco,
+    required String nomeDoBanco,
   }) async {
     final dados = SplayTreeMap<String, dynamic>.from(payload);
 
@@ -194,6 +196,12 @@ class DocumentoRepo {
     final registoBlockchain = await ClienteApiBlockchain()
         .getStatementRecord(documentHashHex);
 
+    if (nomeDoBanco.toString().trim().toLowerCase() != payload['banco'].toString().trim().toLowerCase()) {
+      return recusar(
+        'Extrato inválido.'
+            ' O banco seleccionado não corresponde ao banco no QR Code',
+      );
+    }
     if (registoBlockchain['exists'] != true) {
       return recusar(
         'Não encontrámos um registo que confirme a existência deste extracto. '

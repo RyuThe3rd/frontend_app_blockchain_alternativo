@@ -44,6 +44,7 @@ class DocumentoProvider extends ChangeNotifier{
       resposta = await documentoRepo.processarQrCode(
         CBORDoQrCode: decoded.bytes,
         idDoBanco: banco['bankId'].toString(),
+        nomeDoBanco: banco['name'].toString(),
       );
 
       isDocumentoVeridico = resposta?.isDocumentoVeridico;
