@@ -199,7 +199,7 @@ class DocumentoRepo {
     if (nomeDoBanco.toString().trim().toLowerCase() != payload['banco'].toString().trim().toLowerCase()) {
       return recusar(
         'Extrato inválido.'
-            ' O banco seleccionado não corresponde ao banco no QR Code',
+            ' O banco seleccionado não corresponde ao banco no QR Code, nem às transações que nele constam.',
       );
     }
     if (registoBlockchain['exists'] != true) {
